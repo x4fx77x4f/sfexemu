@@ -1,0 +1,49 @@
+--@client
+return function(size, base)
+    local font
+    if size ~= false then
+        font = render.createFont(base or "DejaVu Sans Mono", size or 20)
+    end
+    local alignments = {
+        [7] = 2,
+        [4] = 2,
+        [1] = 2,
+        [8] = 1,
+        [5] = 1,
+        [2] = 1,
+        [9] = 0,
+        [6] = 0,
+        [3] = 0
+    }
+    local alignments_v = {
+        [7] = 0,
+        [8] = 0,
+        [9] = 0,
+        [4] = 1,
+        [5] = 1,
+        [6] = 1,
+        [1] = 2,
+        [2] = 2,
+        [3] = 2
+    }
+    local function drawtext(str, x, y, align, r, g, b, a, br, bg, bb, ba)
+        align = align or 3
+        local ox = x
+        local w, h = render.getTextSize(str)
+        if alignments[align] == 2 then
+            x = x-w
+        elseif alignments[align] == 1 then
+            x = x-w/2
+        end
+        if alignments_v[align] == 0 then
+            y = y-h
+        elseif alignments_v[align] == 1 then
+            y = y-h/2
+        end
+        render.setRGBA(br or 0, bg or 0, bb or 0, ba or 255)
+        render.drawRectFast(x, y, w, h)
+        render.setRGBA(r or 255, g or 255, b or 255, a or 255)
+        render.drawText(ox, y, str, alignments[align])
+    end
+    return drawtext, font
+end

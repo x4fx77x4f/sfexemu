@@ -1,0 +1,19 @@
+--@name drawtext test
+--@client
+--@include drawtext.txt
+
+local bg = Color(127, 127, 127)
+local drawtext, font = dofile("drawtext.txt")()
+hook.add("render", "render", function()
+    render.setBackgroundColor(bg)
+    render.setFont(font)
+    drawtext("3",   0,   0, 3)
+    drawtext("2", 256,   0, 2)
+    drawtext("1", 512,   0, 1)
+    drawtext("6",   0, 256, 6)
+    drawtext("5", 256, 256, 5)
+    drawtext("4", 512, 256, 4)
+    drawtext("9",   0, 512, 9)
+    drawtext("8", 256, 512, 8)
+    drawtext("7", 512, 512, 7)
+end)

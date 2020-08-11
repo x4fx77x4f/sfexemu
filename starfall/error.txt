@@ -1,0 +1,2 @@
+--@client
+error(string.rep("test", 100))

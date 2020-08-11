@@ -1,0 +1,43 @@
+--@name Font preview
+--@client
+
+local df = "DermaDefault"
+local fonts = {
+    "Akbar",
+    "Coolvetica",
+    "Roboto",
+    "Roboto Mono",
+    "FontAwesome",
+    "Courier New",
+    "Verdana",
+    "Arial",
+    "HalfLife2",
+    "hl2mp",
+    "csd",
+    "Tahoma",
+    "Trebuchet",
+    "Trebuchet MS",
+    "DejaVu Sans Mono",
+    "Lucida Console",
+    "Times New Roman",
+    "Default" -- undocumented
+}
+for k, v in ipairs(fonts) do
+    fonts[k] = {v, render.createFont(v, 20)}
+end
+local bg = Color(0, 0, 0)
+hook.add("render", "render", function()
+    render.setBackgroundColor(bg)
+    local x1, y1 = 256+10, 0
+    local x2 = 256-10
+    for i=1, #fonts do
+        local f = fonts[i]
+        local s = f[1]
+        render.setFont(f[2])
+        local _, y2 = render.getTextSize(s)
+        render.drawText(x1, y1, s)
+        render.setFont(df)
+        render.drawText(x2, y1, s, 2)
+        y1 = y1+y2
+    end
+end)
