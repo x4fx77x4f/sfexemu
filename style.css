@@ -14,6 +14,40 @@ body {
 	align-items: center;
 	justify-content: center;
 }
+footer {
+	display: block;
+	position: absolute;
+	bottom: 0px;
+	left: 8px;
+	padding: 8px;
+	box-sizing: border-box;
+	max-width: calc(100% - 16px);
+	background: #007;
+	border: 1px solid #33a;
+	border-bottom: none;
+}
+footer[hidden] {
+	display: none;
+}
+#footer-close {
+	display: inline-block;
+	font-weight: bold;
+	color: #ddd;
+	min-width: 16px;
+	text-align: center;
+}
+#footer-close:focus,
+#footer-close:hover {
+	background: #700;
+	outline: 1px solid #a33;
+}
+#footer-close:not(:focus):not(:hover) {
+	text-decoration: none;
+}
+a:link,
+a:visited {
+	color: #ddd;
+}
 .instance {
 	border: 1px solid #33a;
 	margin: 8px;
@@ -27,6 +61,17 @@ body {
 	background: #007;
 	border-bottom: 1px solid #33a;
 	padding: 8px;
+	height: 32px;
+	font-size: 24px;
+}
+.label * {
+	display: inline-block;
+	vertical-align: middle;
+}
+.icon {
+	width: auto;
+	height: 100%;
+	float: right;
 }
 .instance.errored,
 .instance.errored .label {

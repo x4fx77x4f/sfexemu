@@ -1,0 +1,52 @@
+--@name UV test
+--@client
+hook.add("render", "initialize", function()
+    render.createRenderTarget("main")
+    render.selectRenderTarget("main")
+        render.setRGBA(119, 0, 0, 255)
+        render.drawRectFast(0, 0, 1024, 1024)
+        render.setRGBA(170, 55, 55, 255)
+        render.drawRectFast(512, 512, 512, 512)
+        render.setRGBA(0, 0, 119, 255)
+        render.drawRectFast(0, 0, 512, 512)
+        render.setRGBA(55, 55, 170, 255)
+        render.drawPoly({
+            {x=256, y=0},
+            {x=316.122, y=196.017},
+            {x=256, y=256},
+            {x=195.878, y=196.017}
+        })
+        render.drawPoly({
+            {x=512, y=195.567},
+            {x=353.280, y=316.261},
+            {x=256, y=256},
+            {x=316.122, y=196.017}
+        })
+        render.drawPoly({
+            {x=414.217, y=512},
+            {x=256, y=390.577},
+            {x=256, y=256},
+            {x=353.280, y=316.261}
+        })
+        render.drawPoly({
+            {x=97.783, y=512},
+            {x=158.720, y=316.261},
+            {x=256, y=256},
+            {x=256, y=390.577}
+        })
+        render.drawPoly({
+            {x=0, y=195.567},
+            {x=195.878, y=196.017},
+            {x=256, y=256},
+            {x=158.720, y=316.261}
+        })
+    render.selectRenderTarget()
+    hook.add("render", "render", function()
+        render.setRenderTargetTexture("main")
+        render.drawTexturedRectUV(  0,   0, 128, 128, 0   , 0   , 1   , 1   )
+        render.drawTexturedRectUV(128,   0, 128, 128, 0.25, 0.25, 0.75, 0.75)
+        render.drawTexturedRectUV(256,   0, 128, 128, 0   , 0   , 0.5 , 0.5 )
+        render.drawTexturedRectUV(384,   0, 128, 128, 0.5 , 0.5 , 1   , 1   )
+    end)
+    hook.remove("render", "initialize")
+end)

@@ -8,7 +8,7 @@ end
 definedfonts = {
 	DebugFixed = '13px monospace',
 	DebugFixedSmall = '13px monospace',
-	Default = '11px sans-serif',
+	Default = 'italic 11px sans-serif',
 	Marlett = '12px Marlett', -- shares some icons with webdings. look into that
 	Trebuchet18 = '16px "Trebuchet MS", sans-serif',
 	Trebuchet24 = '22px "Trebuchet MS", sans-serif',
@@ -84,10 +84,48 @@ function render.createFont(font, size, weight, antialias, additive, shadow, outl
 end
 render.createFont("Default", 16, 400, false, false, false, false, 0)
 
+function render.cursorPos(ply, screen)
+	ply = ply or curchip.player
+	assert(ply:isValid(), "Entity is not valid.")
+	assert(ply._class == "player", "Entity isn't a player")
+	screen = screen or curchip.screen
+	assert(screen:isValid(), "Entity is not valid.")
+	assert(screen == curchip.screen, "Invalid screen")
+	if ply ~= curchip.player then
+		return nil, nil
+	end
+	return curchip.cx, curchip.cy
+end
+
+function render.drawLine(x1, y1, x2, y2)
+	curchip.ctx.lineWidth = 1
+	curchip.ctx:beginPath()
+	curchip.ctx:moveTo(x1, y1)
+	curchip.ctx:lineTo(x2, y2)
+	curchip.ctx:stroke()
+end
+
+function render.drawPoly(poly)
+	curchip.ctx:beginPath()
+	for i, point in ipairs(poly) do
+		curchip.ctx:lineTo(point.x, point.y)
+	end
+	curchip.ctx:closePath()
+	curchip.ctx:fill()
+end
+
 function render.drawRect(x, y, w, h)
 	curchip.ctx:fillRect(x, y, w, h)
 end
-render.drawRectFast = render.drawRect
+
+function render.drawRectFast(x, y, w, h)
+	curchip.ctx:fillRect(math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5))
+end
+
+function render.drawRectOutline(x, y, w, h)
+	curchip.ctx.lineWidth = 1
+	curchip.ctx:strokeRect(x+0.5, y+0.5, w-1, h-1)
+end
 
 local TEXT_H_CENTER = 1
 local TEXT_H_RIGHT = 2
@@ -97,7 +135,21 @@ function render.drawSimpleText(x, y, text, xalign, yalign)
 	local w, h = curchip.ctx:measureText(text).width, curchip.fontheight
 	local xo = xalign == TEXT_H_CENTER and w/2 or xalign == TEXT_H_RIGHT and w or 0
 	local yo = yalign == TEXT_V_CENTER and h/2 or yalign == TEXT_V_TOP   and 0 or h
-	curchip.ctx:fillText(text, x-xo, y+yo-curchip.fontyo)
+	curchip.ctx:fillText(text, math.ceil(x-xo-0.5), math.ceil(y+yo-curchip.fontyo-0.5))
+end
+
+function render.drawTexturedRect(x, y, w, h)
+	curchip.ctx:drawImage(curchip.activemat, x, y, w, h)
+end
+
+function render.drawTexturedRectFast(x, y, w, h)
+	curchip.ctx:drawImage(curchip.activemat, math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5))
+end
+
+function render.drawTexturedRectUV(x, y, w, h, u1, v1, u2, v2)
+	local w2, h2 = curchip.activemat.width, curchip.activemat.height
+	local x2, y2 = w2*u1, h2*v1
+	curchip.ctx:drawImage(curchip.activemat, x2, y2, w2*u2-x2, h2*v2-y2, x, y, w, h)
 end
 
 function render.drawText(x, y, text, alignment)
@@ -111,13 +163,30 @@ function render.drawText(x, y, text, alignment)
 		i = i+1
 		local w = curchip.ctx:measureText(line).width
 		local xo = alignment == TEXT_H_CENTER and w/2 or alignment == TEXT_H_RIGHT and w or 0
-		curchip.ctx:fillText(line, x-xo, y+h*i-curchip.fontyo)
+		curchip.ctx:fillText(line, math.ceil(x-xo-0.5), math.ceil(y+h*i-curchip.fontyo-0.5))
 	end
 end
 
+function render.getScreenEntity()
+	return curchip.inrenderhook and curchip.screen or nil
+end
+
+function render.getScreenInfo(ent)
+	assert(ent:isValid(), "Entity is not valid.")
+	assert(ent == curchip.screen, "Invalid screen")
+	return {
+		RatioX = curchip.canvas.width/curchip.canvas.height
+	}
+end
+
 function render.getTextSize(text)
-	local m = curchip.ctx:measureText(text)
-	return m.width, curchip.fontheight
+	local w = 0
+	local i = 0
+	for line in (text.."\n"):gmatch("(.-)\n") do
+		i = i+1
+		w = math.max(w, curchip.ctx:measureText(line).width)
+	end
+	return w, curchip.fontheight*i
 end
 
 function render.setBackgroundColor(color)
@@ -146,15 +215,48 @@ function render.setRGBA(r, g, b, a)
 	curchip.ctx.strokeStyle = str
 end
 
+function render.createRenderTarget(name)
+	assert(not curchip.targets[name], "A rendertarget with this name already exists!")
+	local canvas = document:createElement("canvas")
+	curchip.targets[name] = canvas
+	canvas.width = 1024
+	canvas.height = 1024
+end
+function render.destroyRenderTarget(name)
+	if name == curchip.activetarget then
+		return
+	end
+	assert(not curchip.targets[name], "Cannot destroy an invalid rendertarget.")
+	curchip.targets[name] = nil
+end
+function render.renderTargetExists(name)
+	return curchip.targets[name] and true
+end
+function render.selectRenderTarget(name)
+	curchip.activetarget = name
+	if name == nil then
+		curchip.ctx = curchip.canvas:getContext("2d")
+		return
+	end
+	assert(curchip.targets[name], "Invalid Rendertarget")
+	curchip.ctx = curchip.targets[name]:getContext("2d")
+end
+function render.setRenderTargetTexture(name)
+	curchip.activemat = curchip.targets[name] or defaultmat
+end
+
+local defaultmat = js.new(window.Image, 1, 1)
+defaultmat.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bpUUrDnYQcchQO1koKuKoVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APEydFJ0UVK/F9SaBHjwXE/3t173L0D/M0qU82eBKBqlpFJJYVcflUIviKEfgSQQExipj4niml4jq97+Ph6F+dZ3uf+HANKwWSATyCeZbphEW8QT29aOud94ggrSwrxOfG4QRckfuS67PIb55LDfp4ZMbKZeeIIsVDqYrmLWdlQiaeIo4qqUb4/57LCeYuzWq2z9j35C8MFbWWZ6zRHkcIiliBCgIw6KqjCQpxWjRQTGdpPevhHHL9ILplcFTByLKAGFZLjB/+D392axckJNymcBHpfbPtjDAjuAq2GbX8f23brBAg8A1dax19rAjOfpDc6WvQIGNwGLq47mrwHXO4Aw0+6ZEiOFKDpLxaB9zP6pjwwdAv0rbm9tfdx+gBkqav0DXBwCMRKlL3u8e5Qd2//nmn39wN3yXKpkdxPFQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+QICw43F786Nw0AAAAMSURBVAjXY/j//z8ABf4C/tzMWecAAAAASUVORK5CYII="
 function render_predraw(chip)
 	chip = chip or curchip
 	local font = definedfonts.Default
 	chip.ctx.font = font[1]
-	chip.ctx.fontheight = font[2]
-	chip.ctx.fontyo = font[3] or 0
-	chip.ctx.fillStyle = chip.bgcolor
+	chip.fontheight = font[2]
+	chip.fontyo = font[3] or 0
+	chip.ctx.fillStyle = chip.bgcolor or "#000000"
 	chip.ctx:fillRect(0, 0, chip.canvas.width, chip.canvas.height)
 	chip.ctx.fillStyle = "#ffffff"
+	chip.activemat = defaultmat
 end
 
 local function findbackwards(str, match)
@@ -166,13 +268,14 @@ local function findbackwards(str, match)
 end
 function render_drawerror(chip)
 	chip = chip or curchip
-	chip.ctx.fillStyle = "#000000"
-	chip.ctx:fillRect(0, 0, chip.canvas.width, chip.canvas.height)
-	chip.ctx.fillStyle = "#00ffff"
+	local ctx = chip.canvas:getContext("2d")
+	ctx.fillStyle = "#000000"
+	ctx:fillRect(0, 0, chip.canvas.width, chip.canvas.height)
+	ctx.fillStyle = "#00ffff"
 	local h = 26
-	chip.ctx.font = h..'px Arial, sans-serif'
-	chip.ctx:fillText("Error occurred in Starfall:", 0, h)
-	chip.ctx.fillStyle = "#ff0000"
+	ctx.font = h..'px Arial, sans-serif'
+	ctx:fillText("Error occurred in Starfall:", 0, h)
+	ctx.fillStyle = "#ff0000"
 	if not chip.errorwrapped then
 		-- https://stackoverflow.com/a/3960916
 		-- doesn't handle strings without spaces in them
@@ -188,7 +291,7 @@ function render_drawerror(chip)
 		end
 		for i=2, #wa do
 			local w = wa[i]
-			local measure = chip.ctx:measureText(lastPhrase..splitChar..w).width
+			local measure = ctx:measureText(lastPhrase..splitChar..w).width
 			if measure < 512 then
 				lastPhrase = lastPhrase..splitChar..w
 			else
@@ -206,15 +309,21 @@ function render_drawerror(chip)
 	for index, line in ipairs(chip.errorwrapped) do
 		local y2 = index*h+h
 		y = math.max(y, y2)
-		chip.ctx:fillText(line, 0, y)
+		ctx:fillText(line, 0, y)
 	end
-	chip.ctx.fillStyle = "#ffffff"
+	ctx.fillStyle = "#ffffff"
 	local file, line = chip.error:match("(.-):(%d+): ")
-	local file2 = file:match('^%[string "starfall/(.+)"%]$')
+	local file2 = file:match('^%[string "(.+)"%]$')
 	file = file and (file2 or "[JS]") or "[unknown]"
 	line = line or "[unknown]"
-	chip.ctx:fillText("File: "..file, 0, y+h)
-	chip.ctx:fillText("Line: "..line, 0, y+h+h)
+	ctx:fillText("File: "..file, 0, y+h)
+	ctx:fillText("Line: "..line, 0, y+h+h)
 end
+
+render.TEXT_ALIGN_LEFT = 0
+render.TEXT_ALIGN_CENTER = 1
+render.TEXT_ALIGN_RIGHT = 2
+render.TEXT_ALIGN_TOP = 3
+render.TEXT_ALIGN_BOTTOM = 4
 
 guestEnv.render = render

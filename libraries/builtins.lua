@@ -26,6 +26,9 @@ end
 --]]
 guestEnv.getmetatable = getmetatable
 guestEnv.ipairs = ipairs
+guestEnv.isValid = function(v)
+	return v.isValid and v:isValid()
+end
 guestEnv.loadstring = loadstring
 guestEnv.next = next
 guestEnv.owner = function()
@@ -38,6 +41,15 @@ guestEnv.player = function()
 end
 guestEnv.print = function(...)
 	print("[GUEST]", ...)
+end
+guestEnv.quotaAverage = function()
+	return curchip:movingCPUAverage()
+end
+guestEnv.quotaMax = function()
+	return curchip.cpuQuota
+end
+guestEnv.quotaUsed = function()
+	return curchip.cpu_total
 end
 guestEnv.rawget = rawget
 guestEnv.rawset = rawset

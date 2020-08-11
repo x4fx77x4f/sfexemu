@@ -1,3 +1,42 @@
+local function strRelToAbs(str, ...)
+	local args = {}
+	for k, v in ipairs(args) do
+		v = v > 0 and v or math.max(string.len(str)+v+1, 1)
+		if v < 1 or v > string.len(str)+1 then
+			error("bad index to string (out of range)", 3)
+		end
+		args[k] = v
+	end
+	return table.unpack(args)
+end
+local function decode(str, startPos)
+	startPos = strRelToAbs(str, startPos or 1)
+	local b1 = string.byte(str, startPos, startPos)
+	if not b1 then
+		return nil
+	end
+	if b1 < 0x80 then
+		return startPos, startPos, b1
+	end
+	if b1 > 0xf4 or b1 < 0xc2 then
+		return nil
+	end
+	local contByteCount = b1 >= 0xf0 and 3 or b1 >= 0xe0 and 2 or b1 >= 0xc0 and 1
+	local endPos = startPos+contByteCount
+	local codePoint = 0
+	if string.len(str) < endPos then
+		return nil
+	end
+	for _, bX in ipairs({string.byte(str, startPos+1, endPos)}) do
+		if bit32.band(bX, 0xc0) ~= 0x80 then
+			return nil
+		end
+		codePoint = bit32.bor(bit32.lshift(codePoint, 6), bit32.band(bX, 0x3f))
+		b1 = bit32.lshift(b1, 1)
+	end
+	codePoint = bit32.bor(codePoint, bit32.lshift(bit32.band(b1, 0x7f), contByteCount*5))
+	return startPos, endPos, codePoint
+end
 local function formattedTime(seconds, format)
 	seconds = seconds or 0
 	local hours = math.floor(seconds/3600)
@@ -219,5 +258,28 @@ guestEnv.string = {
 		c = c and patternSafe(c) or "%s"
 		return string.match(s, "^(.-)"..c.."*$") or s
 	end,
-	upper = string.upper
+	upper = string.upper,
+	utf8char = utf8.char,
+	utf8codepoint = utf8.codepoint,
+	utf8codes = utf8.codes,
+	utf8force = function(str)
+		local buf = {}
+		local curPos, endpos = 1, string.len(str)
+		if endPos == 0 then
+			return str
+		end
+		repeat
+			local seqStartPos, seqEndPos = decode(str, curPos)
+			if not seqStartPos then
+				table.insert(buf, string.char(0xfffd))
+				curPos = curPos+1
+			else
+				table.insert(buf, string.sub(seqStartPos, seqEndPos))
+				curPos = seqEndPos+1
+			end
+		until curPos > endPos
+		return table.concat(buf, "")
+	end,
+	utf8len = utf8.len,
+	utf8offset = utf8.offset
 }

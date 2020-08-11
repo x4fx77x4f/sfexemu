@@ -1,0 +1,14 @@
+--@client
+local bg = Color(0, 0, 0)
+local s = "Fuck off    uwu"
+hook.add("render", "render", function()
+    render.setBackgroundColor(bg)
+    local o = math.sin(timer.systime()*10)
+    render.setFont("DermaLarge")
+    render.drawText(256+o, 64, s, 1)
+    render.drawRect(256+o-100, 64-2, 200, 2)
+    render.drawRectFast(256+o-100, 64-4, 200, 2)
+    render.drawSimpleText(256+o, 128, s, 1)
+    render.drawSimpleText(64, 192, "o: "..o)
+    render.drawSimpleText(64, 256, "o: "..math.round(o))
+end)

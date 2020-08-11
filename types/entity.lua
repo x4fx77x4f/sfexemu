@@ -1,6 +1,6 @@
 entities = {}
-
 local Entity = class("Entity")
+
 function Entity:initialize(data)
 	data = data or {}
 	self._class = data.class
@@ -27,4 +27,5 @@ end
 function Entity:isValid()
 	return self._valid
 end
-return Entity
+
+types.Entity = Entity

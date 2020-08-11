@@ -4,12 +4,28 @@ document = window.document
 class = dofile("middleclass.lua")
 
 --sf_timebuffer_cl = 0.006
-sf_timebuffer_cl = 0.015
+--sf_timebuffer_cl = 0.015
+sf_timebuffer_cl = 0.5
 sf_timebuffersize_cl = 100
-sf_timebuffersoftlock_cl = false
+sf_timebuffersoftlock_cl = true
 sf_ram_max_cl = 1500000
 
-pathprefix = "starfall/"
+prefixes = {
+	scripts = "starfall/",
+	data = "sf_filedata/",
+	materials = "materials/"
+}
+
+dofile("bit32.lua")
+
+function math.clamp(n, min, max)
+	return math.max(math.min(n, max), min)
+end
+
+function math.round(n, idp)
+	local mult = 10^(idp or 0)
+	return math.floor(n*mult+0.5)/mult
+end
 
 function string.normalizePath(path)
 	local null = string.find(path, "\x00", 1, true)
@@ -65,22 +81,43 @@ function table.copy(t, lookup_table)
 	return copy
 end
 
-types = {}
-types.Color = dofile("types/color.lua")
-types.Entity = dofile("types/entity.lua")
-types.Player = dofile("types/player.lua")
+function fetch(url, cb)
+	local promise = window:fetch(url)
+	promise["then"](promise, function(_, response)
+		if not response.ok then
+			cb(false, response)
+			return
+		end
+		local promise = response:text()
+		promise["then"](promise, function(_, text)
+			cb(true, response, text)
+		end)
+	end)
+end
 
+types = {}
 guestEnv = {}
+
+dofile("types/vector.lua")
+dofile("types/color.lua")
+dofile("types/entity.lua")
+dofile("types/material.lua")
+dofile("types/player.lua")
+
 dofile("libraries/builtins.lua")
 dofile("libraries/hook.lua")
+dofile("libraries/material.lua")
+dofile("libraries/math.lua")
+dofile("libraries/os.lua")
 dofile("libraries/render.lua")
 dofile("libraries/string.lua")
+dofile("libraries/timer.lua")
 
 chips = {}
 chipi = 100
 
 function systime()
-	return window.performance:now()
+	return window.performance:now()/1000
 end
 
 instance = class("chip")
@@ -90,6 +127,7 @@ function instance:onerror(err)
 	print(err)
 	self.state = STATE_STOPPED
 	self.window.classList:add("errored")
+	self:updateIcon()
 	render_drawerror(self)
 end
 
@@ -147,22 +185,49 @@ STATE_LOADING = 0
 STATE_STOPPED = 1
 STATE_RUNNING = 2
 
+function instance:updateIcon()
+	if self.state == STATE_LOADING then
+		self.labelIcon.src = "icon_loading.png"
+		self.labelIcon.alt = "Loading"
+	elseif self.state == STATE_STOPPED then
+		self.labelIcon.src = "icon_stopped.png"
+		self.labelIcon.alt = "Stopped"
+	elseif self.state == STATE_RUNNING then
+		self.labelIcon.src = "icon_running.png"
+		self.labelIcon.alt = "Running"
+	end
+	self.labelIcon.title = self.labelIcon.alt
+end
+
 function instance:initialize(main)
+	main = string.normalizePath(main)
 	self.owner = types.Player:new({
-		index = 1
+		index = 1,
+		valid = true
 	})
 	self.player = self.owner
 	self.chip = types.Entity:new({
 		class = "starfall_processor",
 		model = "models/spacecode/sfchip.mdl",
 		owner = self.owner,
-		index = chipi
+		index = chipi,
+		valid = true
 	})
 	chips[chipi] = self
+	chipi = chipi+1
+	self.screen = types.Entity:new({
+		class = "starfall_screen",
+		model = "models/hunter/plates/plate2x2.mdl",
+		owner = self.owner,
+		index = chipi,
+		valid = true
+	})
 	chipi = chipi+1
 
 	self.main = main
 	self.hooks = {}
+	self.timers = {}
+	self.targets = {}
 	self.env = table.copy(guestEnv)
 	self.env._G = self.env
 	self.env._ENV = self.env
@@ -182,8 +247,14 @@ function instance:initialize(main)
 
 	self.label = document:createElement("label")
 	self.label.classList:add("label")
+
 	self.labelName = document:createElement("span")
 	self.label:append(self.labelName)
+
+	self.labelIcon = document:createElement("img")
+	self.labelIcon.classList:add("icon")
+	self.label:append(self.labelIcon)
+
 	self.window:append(self.label)
 
 	self.canvas = document:createElement("canvas")
@@ -191,19 +262,28 @@ function instance:initialize(main)
 	self.canvas.height = 512
 	self.ctx = self.canvas:getContext("2d")
 	self.window:append(self.canvas)
-	document.body:append(self.window)
+	document.body:insertBefore(self.window, document:querySelector("footer"))
 
+	self.canvas:addEventListener("mousemove", function(_, event)
+		self.cx = event.offsetX
+		self.cy = event.offsetY
+	end)
+	self.canvas:addEventListener("mouseout", function(_, event)
+		self.cx = nil
+		self.cy = nil
+	end)
 	self.bgcolor = "#000000"
 	render_predraw(self)
 
 	self:setName("Generic (No-Name)")
 	self.state = STATE_LOADING
+	self:updateIcon()
 
 	self.cpu_total = 0
 	self.cpu_average = 0
 	self.cpu_softquota = 1
 
-	local promise = window:fetch(pathprefix..main)
+	local promise = window:fetch(prefixes.scripts..main)
 	promise["then"](promise, function(_, response)
 		if response.ok then
 			local promise = response:text()
@@ -223,7 +303,7 @@ function instance:initialize(main)
 							self:onerror(debug.traceback("You can't have a clientmain and client directive at the same time"))
 						elseif directive == "include" then
 							canrunnow = false
-							table.insert(needtofetch, parameters)
+							table.insert(needtofetch, string.normalizePath(parameters))
 						elseif directive == "includedir" then
 							self:onerror(debug.traceback("\x2d-@includedir is not implemented"))
 							return
@@ -250,14 +330,14 @@ function instance:initialize(main)
 					debug.setupvalue(func, 1, self.env)
 					if canrunnow then
 						self.state = STATE_RUNNING
-						curchip = self
+						self.lastframe = systime()
+						self:updateIcon()
 						self:run(func)
-						curchip = nil
 					else
 						self.loadi = 0
 						self.loadim = #needtofetch
 						for _, path in pairs(needtofetch) do
-							local promise = window:fetch(pathprefix..path)
+							local promise = window:fetch(prefixes.scripts..path)
 							promise["then"](promise, function(_, response)
 								if not response.ok then
 									self:onerror(debug.traceback(string.format("HTTP %d %s", response.status, response.statusText)))
@@ -277,6 +357,8 @@ function instance:initialize(main)
 										self.loadi = self.loadi+1
 										if self.loadi >= self.loadim then
 											self.state = STATE_RUNNING
+											self.lastframe = systime()
+											self:updateIcon()
 											self:run(func)
 										end
 									else
@@ -300,26 +382,64 @@ end
 local params = js.new(window.URLSearchParams, window.location.search)
 local mainpath = params:get("main")
 if mainpath == js.null then
-	mainpath = "helloworld.lua"
+	mainpath = "splash.lua"
 end
 
 function ontick()
 	for index, chip in pairs(chips) do
 		if chip.state == STATE_RUNNING then
-			curchip = chip
-			render_predraw()
-			chip:run(guestEnv.hook.run, "think")
-			chip:run(guestEnv.hook.run, "render")
-			curchip = nil
+			render_predraw(chip)
+			chip.cpu_average = chip:movingCPUAverage()
+			chip.cpu_total = 0
+			hook_run(chip, "think")
+			--chip:run(guestEnv.hook.run, "think")
+			if chip.state ~= STATE_RUNNING then goto continue end
+			local now = window.performance:now()
+			chip.dt = (now-chip.lastframe)/1000
+			chip.lastframe = now
+			hook_run(chip, "render")
+			--chip:run(guestEnv.hook.run, "render")
+			if chip.state ~= STATE_RUNNING then goto continue end
+			now = systime()
+			local toremove = {}
+			for name, data in pairs(chip.timers) do
+				local due = data.lasttime+data.delay-now <= 0
+				if due then
+					chip:run(data.func)
+					if chip.state ~= STATE_RUNNING then goto continue end
+					data.lasttime = window.performance:now()
+					data.reps = data.reps-1
+					if data.reps <= 0 then
+						toremove[name] = true
+					end
+				end
+			end
+			for name in pairs(toremove) do
+				chip.timers[name] = nil
+			end
 		end
+		::continue::
 	end
 	window:requestAnimationFrame(ontick)
 end
 window:requestAnimationFrame(ontick)
 
+local footer = document:querySelector("footer")
+local magic = "hidefooter=true"
+if document.cookie == magic then
+	footer:remove()
+else
+	footer.hidden = false
+	document:getElementById("footer-close"):addEventListener("click", function(_, event)
+		event:preventDefault()
+		footer:remove()
+		document.cookie = magic..";sameSite=strict"
+	end)
+end
+
 local els = document:getElementsByClassName("removeme")
-while els[1] do
-	els[1]:remove()
+while els[0] do
+	els[0]:remove()
 end
 
 instance:new(mainpath)

@@ -24,4 +24,21 @@ function hook.run(hookname, name, ...)
 	end
 end
 
+function hook_run(chip, hookname, ...)
+	if not chip.hooks[hookname] then
+		return false
+	end
+	if hookname == "render" then
+		chip.inrenderhook = true
+	end
+	for name, func in pairs(chip.hooks[hookname]) do
+		chip:run(func, ...)
+		if chip.state ~= STATE_RUNNING then
+			return false
+		end
+	end
+	chip.inrenderhook = false
+	return true
+end
+
 guestEnv.hook = hook

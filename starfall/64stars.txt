@@ -1,0 +1,13 @@
+--@name 64 stars
+--@client
+local mat = material.load("radon/starfall2")
+hook.add("render", "render", function()
+    local r = math.sin(timer.systime())*72
+    render.setMaterial(mat)
+    for y=1, 8 do
+        for x=1, 8 do
+            render.setRGBA(255-x*10, 255, 255-y*10, 255)
+            render.drawTexturedRectRotatedFast((x-1)*64+32, (y-1)*64+32, 64, 64, r)
+        end
+    end
+end)

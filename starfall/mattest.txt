@@ -1,0 +1,34 @@
+--@name mat test
+--@client
+--@include drawtext.txt
+--if player() ~= owner() then return end
+local drawtext, font = dofile("drawtext.txt")(12)
+local mats = {
+    "UnlitGeneric",
+    "VertexLitGeneric",
+    "Refract_DX90",
+    "Water_DX90",
+    "Sky_DX9",
+    "gmodscreenspace",
+    "Modulate_DX9"
+}
+for k, v in pairs(mats) do
+    local m = material.create(v)
+    mats[k] = {m, v}
+    m:setTextureURL("$basetexture", "https://i.imgur.com/NbrfOV7.png")
+end
+local function draw(i, x, y)
+    render.setMaterial(mats[i][1])
+    render.drawTexturedRect(x, y, 128, 128)
+    drawtext(mats[i][2], x, y, 3, 255, 255, 255, 255, 0, 0, 0, 191)
+end
+hook.add("render", "render", function()
+    render.setFont(font)
+    draw(1,   0,   0)
+    draw(2, 128,   0)
+    draw(3, 256,   0)
+    draw(4, 384,   0)
+    draw(5,   0, 128)
+    draw(6, 128, 128)
+    draw(7, 256, 128)
+end)
