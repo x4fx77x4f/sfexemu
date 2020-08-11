@@ -1,5 +1,8 @@
 local render = {}
 
+local defaultmat = js.new(window.Image, 1, 1)
+defaultmat.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bpUUrDnYQcchQO1koKuKoVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APEydFJ0UVK/F9SaBHjwXE/3t173L0D/M0qU82eBKBqlpFJJYVcflUIviKEfgSQQExipj4niml4jq97+Ph6F+dZ3uf+HANKwWSATyCeZbphEW8QT29aOud94ggrSwrxOfG4QRckfuS67PIb55LDfp4ZMbKZeeIIsVDqYrmLWdlQiaeIo4qqUb4/57LCeYuzWq2z9j35C8MFbWWZ6zRHkcIiliBCgIw6KqjCQpxWjRQTGdpPevhHHL9ILplcFTByLKAGFZLjB/+D392axckJNymcBHpfbPtjDAjuAq2GbX8f23brBAg8A1dax19rAjOfpDc6WvQIGNwGLq47mrwHXO4Aw0+6ZEiOFKDpLxaB9zP6pjwwdAv0rbm9tfdx+gBkqav0DXBwCMRKlL3u8e5Qd2//nmn39wN3yXKpkdxPFQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+QICw43F786Nw0AAAAMSURBVAjXY/j//z8ABf4C/tzMWecAAAAASUVORK5CYII="
+
 function render.clear(color, depth)
 	render.setColor(color)
 	render.drawRectFast(0, 0, curchip.canvas.width, curchip.canvas.height)
@@ -146,6 +149,16 @@ function render.drawTexturedRectFast(x, y, w, h)
 	curchip.ctx:drawImage(curchip.activemat, math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5))
 end
 
+function render.drawTexturedRectRotated(x, y, w, h, r)
+	curchip.ctx:save()
+	curchip.ctx:translate(x, y)
+	curchip.ctx:rotate(r*math.pi/180)
+	curchip.ctx:drawImage(curchip.activemat, -w/2, -h/2, w, h)
+	curchip.ctx:restore()
+end
+
+render.drawTexturedRectRotatedFast = render.drawTexturedRectRotated
+
 function render.drawTexturedRectUV(x, y, w, h, u1, v1, u2, v2)
 	local w2, h2 = curchip.activemat.width, curchip.activemat.height
 	local x2, y2 = w2*u1, h2*v1
@@ -205,6 +218,12 @@ function render.setFont(font)
 	curchip.fontyo = font[3] or 0
 end
 
+function render.setMaterial(name)
+	local mat = assert(materialsId[name], "uh-oh")
+	curchip.activemat = mat._img or defaultmat
+	curchip.activemat2 = not mat._img and mat
+end
+
 function render.setRGBA(r, g, b, a)
 	r = math.max(math.min(r, 255), 0)
 	g = math.max(math.min(g, 255), 0)
@@ -245,8 +264,6 @@ function render.setRenderTargetTexture(name)
 	curchip.activemat = curchip.targets[name] or defaultmat
 end
 
-local defaultmat = js.new(window.Image, 1, 1)
-defaultmat.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bpUUrDnYQcchQO1koKuKoVShChVArtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APEydFJ0UVK/F9SaBHjwXE/3t173L0D/M0qU82eBKBqlpFJJYVcflUIviKEfgSQQExipj4niml4jq97+Ph6F+dZ3uf+HANKwWSATyCeZbphEW8QT29aOud94ggrSwrxOfG4QRckfuS67PIb55LDfp4ZMbKZeeIIsVDqYrmLWdlQiaeIo4qqUb4/57LCeYuzWq2z9j35C8MFbWWZ6zRHkcIiliBCgIw6KqjCQpxWjRQTGdpPevhHHL9ILplcFTByLKAGFZLjB/+D392axckJNymcBHpfbPtjDAjuAq2GbX8f23brBAg8A1dax19rAjOfpDc6WvQIGNwGLq47mrwHXO4Aw0+6ZEiOFKDpLxaB9zP6pjwwdAv0rbm9tfdx+gBkqav0DXBwCMRKlL3u8e5Qd2//nmn39wN3yXKpkdxPFQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+QICw43F786Nw0AAAAMSURBVAjXY/j//z8ABf4C/tzMWecAAAAASUVORK5CYII="
 function render_predraw(chip)
 	chip = chip or curchip
 	local font = definedfonts.Default

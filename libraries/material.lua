@@ -17,6 +17,8 @@ function material.create(shader)
 	return types.Material:new(shader)
 end
 
+materialsId = {}
+
 materialsGame = {
 	["radon/starfall2"] = true
 }
@@ -27,13 +29,36 @@ function material.load(path)
 	end
 	assert(materialsGame[path], "This material doesn't exist or is blacklisted")
 	local mat = types.Material:new(false, path)
-	fetch(prefixes.materials..string.normalizePath(path)..".vmt", function(success, response, text)
+	mat._img = document:createElement("img")
+	path = prefixes.materials..string.normalizePath(path)
+	local curchip = curchip
+	fetch(path..".vmt", function(success, response, text)
 		if not success then
-			print(string.format("Got HTTP %d %s on path %q", response.status, response.statusText, path))
-			error("This material doesn't exist or is blacklisted")
+			print(string.format("Got HTTP %d %s while fetching %q", response.status, response.statusText, response.url))
+			curchip:onerror(debug.traceback("This material doesn't exist or is blacklisted"))
+			return
 		end
+		local success, data = xpcall(keyvalues.decode, function(err)
+			curchip:onerror(debug.traceback(tostring(err)))
+		end, text)
+		if not success then
+			return
+		end
+		local shader
+		for k in pairs(data) do
+			shader = k
+			break
+		end
+		function mat._img:onload()
+			if curchip.activemat2 then
+				curchip.activemat = mat._img
+			end
+		end
+		mat._img.src = prefixes.materials..string.normalizePath(data[shader]["$basetexture"])..".png"
 	end)
-	return mat
+	local id = {}
+	materialsId[id] = mat
+	return id
 end
 
 guestEnv.material = material

@@ -1,0 +1,9 @@
+--@client
+local bg = Color(0, 0, 0)
+local mat = material.load("radon/starfall2")
+print(mat, type(mat), tostring(mat))
+hook.add("render", "render", function()
+    render.setBackgroundColor(bg)
+    render.setMaterial(mat)
+    render.drawTexturedRect(0, 0, 512, 512)
+end)
