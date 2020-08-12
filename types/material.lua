@@ -119,4 +119,20 @@ function Material:initialize(shader, texture)
 	end
 end
 
+function Material:setTextureURL(key, url, cb, done)
+	assert(key == "$basetexture", "other keys not implemented")
+	cb = cb or function() end
+	done = done or function() end
+	self._img = self._img or document:createElement("img")
+	function self._img.onload()
+		cb(self, url, self._img.width, self._img.height)
+		done(self, url)
+	end
+	local curchip = curchip
+	function self._img.onerror()
+		curchip:onerror(debug.traceback("FUCK"))
+	end
+	self._img.src = url
+end
+
 types.Material = Material

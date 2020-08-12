@@ -116,10 +116,6 @@ dofile("libraries/timer.lua")
 chips = {}
 chipi = 100
 
-function systime()
-	return window.performance:now()/1000
-end
-
 instance = class("chip")
 
 function instance:onerror(err)
@@ -135,6 +131,9 @@ function instance:movingCPUAverage()
 	return self.cpu_average+(self.cpu_total-self.cpu_average)*self.cpuQuotaRatio
 end
 
+local function systime()
+	return window.performance:now()/1000
+end
 function instance:runWithOps(func, ...)
 	assert(self.state == STATE_RUNNING, debug.traceback("Instance not running"))
 	local oldSysTime = systime()-self.cpu_total
@@ -263,6 +262,11 @@ function instance:initialize(main)
 	self.ctx = self.canvas:getContext("2d")
 	self.window:append(self.canvas)
 	document.body:insertBefore(self.window, document:querySelector("footer"))
+
+	self.canvas2 = document:createElement("canvas")
+	self.canvas2.width = 512
+	self.canvas2.height = 512
+	self.ctx2 = self.canvas2:getContext("2d")
 
 	self.canvas:addEventListener("mousemove", function(_, event)
 		self.cx = event.offsetX
@@ -400,7 +404,7 @@ function ontick()
 			hook_run(chip, "render")
 			--chip:run(guestEnv.hook.run, "render")
 			if chip.state ~= STATE_RUNNING then goto continue end
-			now = systime()
+			now = window.performance:now()
 			local toremove = {}
 			for name, data in pairs(chip.timers) do
 				local due = data.lasttime+data.delay-now <= 0
@@ -408,9 +412,11 @@ function ontick()
 					chip:run(data.func)
 					if chip.state ~= STATE_RUNNING then goto continue end
 					data.lasttime = window.performance:now()
-					data.reps = data.reps-1
-					if data.reps <= 0 then
-						toremove[name] = true
+					if data.reps then
+						data.reps = data.reps-1
+						if data.reps <= 0 then
+							toremove[name] = true
+						end
 					end
 				end
 			end

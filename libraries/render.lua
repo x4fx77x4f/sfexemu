@@ -100,6 +100,13 @@ function render.cursorPos(ply, screen)
 	return curchip.cx, curchip.cy
 end
 
+function render.drawCircle(x, y, r)
+	curchip.ctx.lineWidth = 1
+	curchip.ctx:beginPath()
+	curchip.ctx:arc(x, y, r, 0, 2*math.pi)
+	curchip.ctx:stroke()
+end
+
 function render.drawLine(x1, y1, x2, y2)
 	curchip.ctx.lineWidth = 1
 	curchip.ctx:beginPath()
@@ -130,6 +137,57 @@ function render.drawRectOutline(x, y, w, h)
 	curchip.ctx:strokeRect(x+0.5, y+0.5, w-1, h-1)
 end
 
+function render.drawRoundedBox(r, x, y, w, h)
+	render.drawRoundedBoxEx(r, x, y, w, h, true, true, true, true)
+end
+
+local d90 = math.pi/2
+local tl1, tl2 = math.pi*0.75, math.pi*1.75
+local tr1, tr2 = tl1+d90, tl2+d90
+local br1, br2 = tr1+d90, tr2+d90
+local bl1, bl2 = br1+d90, br2+d90
+function render.drawRoundedBoxEx(r, x, y, w, h, tl, tr, bl, br)
+	x = math.ceil(x-0.5)
+	y = math.ceil(y-0.5)
+	w = math.ceil(y-0.5)
+	h = math.ceil(y-0.5)
+	if r == 0 or not(tl or tr or bl or br) then
+		curchip.ctx:fillRect(x, y, w, h)
+		return
+	end
+	r = math.min(math.ceil(r-0.5), math.floor(w/2))
+	curchip.ctx:fillRect(x, y+r, w, h-r-r)
+	curchip.ctx:fillRect(x+r, y, w-r-r, h)
+	if tl then
+		curchip.ctx:beginPath()
+		curchip.ctx:arc(x+r, y+r, r, tl1, tl2, false)
+		curchip.ctx:fill()
+	else
+		curchip.ctx:fillRect(x, y, r, r)
+	end
+	if tr then
+		curchip.ctx:beginPath()
+		curchip.ctx:arc(x+w-r, y+r, r, tr1, tr2, false)
+		curchip.ctx:fill()
+	else
+		curchip.ctx:fillRect(x+w-r, y, r, r)
+	end
+	if br then
+		curchip.ctx:beginPath()
+		curchip.ctx:arc(x+w-r, y+h-r, r, br1, br2, false)
+		curchip.ctx:fill()
+	else
+		curchip.ctx:fillRect(x+w-r, y+h-r, r, r)
+	end
+	if bl then
+		curchip.ctx:beginPath()
+		curchip.ctx:arc(x+r, y+h-r, r, bl1, bl2, false)
+		curchip.ctx:fill()
+	else
+		curchip.ctx:fillRect(x, y+h-r, r, r)
+	end
+end
+
 local TEXT_H_CENTER = 1
 local TEXT_H_RIGHT = 2
 local TEXT_V_CENTER = 1
@@ -142,27 +200,60 @@ function render.drawSimpleText(x, y, text, xalign, yalign)
 end
 
 function render.drawTexturedRect(x, y, w, h)
-	curchip.ctx:drawImage(curchip.activemat, x, y, w, h)
+	if not curchip.white then
+		-- https://stackoverflow.com/a/4231508
+		curchip.ctx2:clearRect(0, 0, 1024, 1024)
+		curchip.ctx2.fillStyle = curchip.ctx.fillStyle
+		curchip.ctx2:fillRect(0, 0, 1024, 1024)
+		curchip.ctx2.globalCompositeOperation = "destination-atop"
+		curchip.ctx2:drawImage(curchip.activemat, 0, 00)
+	end
+	curchip.ctx.globalAlpha = curchip.alpha
+	curchip.ctx:drawImage(curchip.white and curchip.activemat or curchip.canvas2, x, y, w, h)
+	curchip.ctx.globalAlpha = 1
 end
 
 function render.drawTexturedRectFast(x, y, w, h)
-	curchip.ctx:drawImage(curchip.activemat, math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5))
+	render.drawTexturedRect(math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5))
 end
 
 function render.drawTexturedRectRotated(x, y, w, h, r)
+	if not curchip.white then
+		curchip.ctx2:clearRect(0, 0, 1024, 1024)
+		curchip.ctx2.fillStyle = curchip.ctx.fillStyle
+		curchip.ctx2:fillRect(0, 0, 1024, 1024)
+		curchip.ctx2.globalCompositeOperation = "destination-atop"
+		curchip.ctx2:drawImage(curchip.activemat, 0, 00)
+	end
 	curchip.ctx:save()
 	curchip.ctx:translate(x, y)
 	curchip.ctx:rotate(r*math.pi/180)
-	curchip.ctx:drawImage(curchip.activemat, -w/2, -h/2, w, h)
+	curchip.ctx.globalAlpha = curchip.alpha
+	curchip.ctx:drawImage(curchip.white and curchip.activemat or curchip.canvas2, -w/2, -h/2, w, h)
+	curchip.ctx.globalAlpha = 1
 	curchip.ctx:restore()
 end
 
-render.drawTexturedRectRotatedFast = render.drawTexturedRectRotated
+function render.drawTexturedRectRotatedFast(x, y, w, h, r)
+	render.drawTexturedRectRotated(math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5), r)
+end
 
 function render.drawTexturedRectUV(x, y, w, h, u1, v1, u2, v2)
-	local w2, h2 = curchip.activemat.width, curchip.activemat.height
+	if not curchip.white then
+		curchip.ctx2:clearRect(0, 0, 1024, 1024)
+		curchip.ctx2.fillStyle = curchip.ctx.fillStyle
+		curchip.ctx2:fillRect(0, 0, 1024, 1024)
+		curchip.ctx2.globalCompositeOperation = "destination-atop"
+		curchip.ctx2:drawImage(curchip.activemat, 0, 00)
+	end
+	local mat = curchip.white and curchip.activemat or curchip.canvas2
+	local w2, h2 = mat.width, mat.height
 	local x2, y2 = w2*u1, h2*v1
-	curchip.ctx:drawImage(curchip.activemat, x2, y2, w2*u2-x2, h2*v2-y2, x, y, w, h)
+	curchip.ctx:drawImage(mat, x2, y2, w2*u2-x2, h2*v2-y2, x, y, w, h)
+end
+
+function render.drawTexturedRectUVFast(x, y, w, h, u1, v1, u2, v2)
+	render.drawTexturedRectUV(math.ceil(x-0.5), math.ceil(y-0.5), math.ceil(w-0.5), math.ceil(h-0.5), u1, v1, u2, v2)
 end
 
 function render.drawText(x, y, text, alignment)
@@ -207,6 +298,8 @@ function render.setBackgroundColor(color)
 end
 
 function render.setColor(color)
+	curchip.white = color._white
+	curchip.alpha = color._a
 	curchip.ctx.fillStyle = color._fillstyle
 	curchip.ctx.strokeStyle = color._strokestyle
 end
@@ -218,8 +311,12 @@ function render.setFont(font)
 	curchip.fontyo = font[3] or 0
 end
 
-function render.setMaterial(name)
-	local mat = assert(materialsId[name], "uh-oh")
+function render.setMaterial(mat)
+	if not mat then
+		curchip.activemat = defaultmat
+		curchip.activemat2 = nil
+		return
+	end
 	curchip.activemat = mat._img or defaultmat
 	curchip.activemat2 = not mat._img and mat
 end
@@ -228,10 +325,12 @@ function render.setRGBA(r, g, b, a)
 	r = math.max(math.min(r, 255), 0)
 	g = math.max(math.min(g, 255), 0)
 	b = math.max(math.min(b, 255), 0)
-	a = math.max(math.min(a, 255), 0)
-	local str = string.format("rgba(%f, %f, %f, %f)", r, g, b, a/255)
+	a = math.max(math.min(a, 255), 0)/255
+	local str = string.format("rgba(%f, %f, %f, %f)", r, g, b, a)
+	curchip.alpha = a
 	curchip.ctx.fillStyle = str
 	curchip.ctx.strokeStyle = str
+	curchip.white = r == 255 and g == 255 and b == 255
 end
 
 function render.createRenderTarget(name)
@@ -273,6 +372,7 @@ function render_predraw(chip)
 	chip.ctx.fillStyle = chip.bgcolor or "#000000"
 	chip.ctx:fillRect(0, 0, chip.canvas.width, chip.canvas.height)
 	chip.ctx.fillStyle = "#ffffff"
+	chip.ctx.strokeStyle = chip.ctx.fillStyle
 	chip.activemat = defaultmat
 end
 

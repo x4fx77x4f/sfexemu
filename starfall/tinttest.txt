@@ -1,0 +1,11 @@
+--@client
+local bg = Color(0, 0, 0)
+local mat = material.load("radon/starfall2")
+hook.add("render", "render", function()
+    render.setBackgroundColor(bg)
+    render.setColor(Color(timer.systime()*25%360, 0.5, 0.5):hsvToRGB())
+    render.setMaterial(mat)
+    --render.drawTexturedRect(0, 0, 512, 512)
+    render.drawTexturedRectUV(0, 0, 512, 512, 0.25, 0.30, 0.75, 0.80)
+    render.drawRectFast(16, 16, 32, 32)
+end)

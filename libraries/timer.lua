@@ -10,9 +10,10 @@ function timer.adjust(name, delay, reps, func)
 end
 function timer.create(name, delay, reps, func)
 	curchip.timers[name] = {
-		delay = delay or 0,
+		delay = delay and delay*1000 or 0,
 		reps = reps ~= 0 and reps,
 		func = func,
+		lasttime = window.performance:now(),
 		paused = false
 	}
 end

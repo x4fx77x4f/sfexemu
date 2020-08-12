@@ -1,5 +1,6 @@
 guestEnv.assert = assert
 guestEnv.class = class
+guestEnv.CLIENT = true
 guestEnv.Color = function(r, g, b, a)
 	return types.Color:new(r, g, b, a)
 end

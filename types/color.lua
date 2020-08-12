@@ -15,6 +15,7 @@ function Color:initialize(r, g, b, a)
 	a = math.clamp(a, 0, 255)
 	self._fillstyle = string.format("rgba(%f, %f, %f, %f)", r, g, b, a/255)
 	self._strokestyle = self._fillstyle
+	self._white = r == 255 and g == 255 and b == 255
 end
 
 function Color:set(color)

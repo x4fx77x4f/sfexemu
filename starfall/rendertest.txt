@@ -1,0 +1,41 @@
+--@name render test
+--@client
+local bg = Color(0, 0, 0)
+local mat = material.load("radon/starfall2")
+local lastframe, fps, frames = timer.systime(), 0, 0
+hook.add("render", "render", function()
+    frames = frames+1
+    local now = timer.systime()
+    local t = now-lastframe
+    if t >= 1 then
+        fps = frames
+        frames = 0
+        lastframe = now
+    end
+    render.setBackgroundColor(bg)
+    render.drawCircle(64, 64, 64) -- infinitely thin stroke, no fill
+    render.drawLine(128, 0, 256, 128) -- infinitely thin stroke
+    render.drawPoly({ -- should look like a triangle, NOT a caret (^)
+        {x=256, y=128},
+        {x=320, y=0},
+        {x=384, y=128},
+        {x=368, y=128},
+        {x=320, y=16},
+        {x=272, y=128},
+        {x=256, y=128}
+    })
+    render.drawRect(384, 0, 128, 128)
+    render.drawRectFast(0, 128, 128, 128)
+    render.drawRectOutline(128, 128, 128, 128)
+    render.drawRoundedBox(48, 256, 128, 128, 128)
+    render.drawRoundedBoxEx(48, 384, 128, 128, 128, true, false, false, true)
+    render.setMaterial(mat)
+    render.drawTexturedRect(0, 256, 128, 128)
+    render.drawTexturedRectFast(128, 256, 128, 128)
+    render.drawTexturedRectRotated(320, 320, 90.509, 90.509, 45)
+    render.drawTexturedRectRotatedFast(448, 320, 90.509, 90.509, 45)
+    render.drawTexturedRectUV(0, 384, 128, 128, 0.25, 0.30, 0.75, 0.80)
+    render.drawTexturedRectUVFast(128, 384, 128, 128, 0.25, 0.30, 0.75, 0.80)
+    render.setFont("DebugFixed")
+    render.drawSimpleText(512, 512, fps.." FPS", 2, 4)
+end)

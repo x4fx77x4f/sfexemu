@@ -14,10 +14,9 @@ shaders = {
 
 function material.create(shader)
 	assert(shaders[shader], "Tried to use unsupported shader: "..shader)
-	return types.Material:new(shader)
+	local mat = types.Material:new(shader)
+	return mat
 end
-
-materialsId = {}
 
 materialsGame = {
 	["radon/starfall2"] = true
@@ -56,9 +55,7 @@ function material.load(path)
 		end
 		mat._img.src = prefixes.materials..string.normalizePath(data[shader]["$basetexture"])..".png"
 	end)
-	local id = {}
-	materialsId[id] = mat
-	return id
+	return mat
 end
 
 guestEnv.material = material
