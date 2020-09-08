@@ -16,6 +16,12 @@ prefixes = {
 	materials = "materials/"
 }
 
+local params = js.new(window.URLSearchParams, window.location.search)
+local mainpath = params:get("main")
+if mainpath == js.null then
+	mainpath = "splash.lua"
+end
+
 dofile("bit32.lua")
 
 function math.clamp(n, min, max)
@@ -277,7 +283,8 @@ function instance:initialize(main)
 		self.cy = nil
 	end)
 	self.bgcolor = "#000000"
-	render_predraw(self)
+	self.predraw = render_predraw
+	self:predraw()
 
 	self:setName("Generic (No-Name)")
 	self.state = STATE_LOADING
@@ -381,12 +388,6 @@ function instance:initialize(main)
 			self:onerror(debug.traceback(string.format("HTTP %d %s", response.status, response.statusText)))
 		end
 	end)
-end
-
-local params = js.new(window.URLSearchParams, window.location.search)
-local mainpath = params:get("main")
-if mainpath == js.null then
-	mainpath = "splash.lua"
 end
 
 function ontick()

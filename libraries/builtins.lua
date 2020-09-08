@@ -30,7 +30,7 @@ guestEnv.ipairs = ipairs
 guestEnv.isValid = function(v)
 	return v.isValid and v:isValid()
 end
-guestEnv.loadstring = loadstring
+guestEnv.loadstring = load
 guestEnv.next = next
 guestEnv.owner = function()
 	return curchip.owner
