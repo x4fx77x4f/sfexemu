@@ -28,13 +28,13 @@ local function decode(str, startPos)
 		return nil
 	end
 	for _, bX in ipairs({string.byte(str, startPos+1, endPos)}) do
-		if bit32.band(bX, 0xc0) ~= 0x80 then
+		if (bX & 0xc0) ~= 0x80 then
 			return nil
 		end
-		codePoint = bit32.bor(bit32.lshift(codePoint, 6), bit32.band(bX, 0x3f))
-		b1 = bit32.lshift(b1, 1)
+		codePoint = ((codePoint << 6) | (bX & 0x3f))
+		b1 = (b1 << 1)
 	end
-	codePoint = bit32.bor(codePoint, bit32.lshift(bit32.band(b1, 0x7f), contByteCount*5))
+	codePoint = (codePoint | ((b1 & 0x7f) << contByteCount*5))
 	return startPos, endPos, codePoint
 end
 local function formattedTime(seconds, format)
