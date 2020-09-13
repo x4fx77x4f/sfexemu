@@ -8,8 +8,11 @@ Put the folder somewhere on your webserver. It doesn't matter where. Serverside 
 
 ## License
 
-`bit32.lua`: [MIT License; Copyright (c) 2018-2020 Egor Skriptunoff](https://github.com/Egor-Skriptunoff/pure_lua_SHA/blob/master/LICENSE)
-`fengari.js`: [MIT License; Copyright (c) 1994-2019 Benoit Giannangeli, Daurnimator, Lua.org, PUC-Rio](https://github.com/fengari-lua/fengari/blob/master/LICENSE)
+`bit32.lua`: [MIT License; Copyright © 2018-2020 Egor Skriptunoff](https://github.com/Egor-Skriptunoff/pure_lua_SHA/blob/master/LICENSE)
+
+`fengari-web.js`: [MIT License; Copyright © 1994-2019 Benoit Giannangeli, Daurnimator, Lua.org, PUC-Rio](https://github.com/fengari-lua/fengari/blob/master/LICENSE)
+
+`middleclass.lua`: [MIT License; Copyright © 2011-2018 Enrique García Cota](https://github.com/kikito/middleclass/blob/master/MIT-LICENSE.txt)
 
 Some of the files in this project contain derivative code from StarfallEx, which is licensed under [the 3-clause BSD license](https://github.com/thegrb93/StarfallEx/blob/master/License.txt)
 
