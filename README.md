@@ -1,6 +1,30 @@
 # SFExEmu
 
-A crude reimplementation of StarfallEx in the browser. Only 2D stuff will ever be supported. I'd like to make a remake with support for 3D, but that would be quite the undertaking (and it will be in a different repo if I ever do).
+A crude reimplementation of StarfallEx in the browser. This only supports clientside code and will never support 3D.
+
+## Security
+
+This probably isn't a secure sandbox.
+
+## Completion
+
+`hook`, `material`, `math`, `os`, `render`, `string`, and `timer` are implemented.
+
+### Built-ins
+
+Most builtins are supported, minus `getfenv`, `setfenv`, `crc`, `setSoftQuota`, `getScripts`, `getLibraries`, `setClipboardText`, `dodir`, `requiredir`, `setName`, `concmd`, `printMessage`, `getMethods`, `try`, anything that has to do with worldspace, permissions, or memory usage, and any enums for which their corresponding functions don't exist.
+
+### `render`
+
+3D rendering functions will never be supported.
+
+Fonts might render incorrectly, but it should still be close enough with the exception of Marlett, HL2MPTypeDeath, FontAwesome, HalfLife2, hl2mp, and csd.
+
+All of the weird behavior with non-left-aligned text in `render.drawText` has not been implemented. Tabs are just replaced with 5 spaces.
+
+### `material`
+
+Materials are pretty sloppily implemented, but they do work. Currently, you can only use `radon/starfall2` but you can add more to the `materials` folder. Only PNG files are supported; no VTF. Corresponding VMF files are required but are completely ignored.
 
 ## Usage
 
