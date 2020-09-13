@@ -6,7 +6,7 @@ if not keyvalues then
 		decode = function(data, path)
 			return {
 				UnlitGeneric = {
-					["$basetexture"] = path..".png"
+					["$basetexture"] = path
 				}
 			}
 		end
