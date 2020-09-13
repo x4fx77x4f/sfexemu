@@ -12,7 +12,7 @@ This probably isn't a secure sandbox.
 
 ### Built-ins
 
-Most builtins are supported, minus `getfenv`, `setfenv`, `crc`, `setSoftQuota`, `getScripts`, `getLibraries`, `setClipboardText`, `dodir`, `requiredir`, `setName`, `concmd`, `printMessage`, `getMethods`, `try`, anything that has to do with worldspace, permissions, or memory usage, and any enums for which their corresponding functions don't exist.
+Most builtins are supported, minus `getfenv`, `setfenv`, `crc`, `setSoftQuota`, `getScripts`, `getLibraries`, `setClipboardText`, `dodir`, `requiredir`, `setName`, `concmd`, `printMessage`, `getMethods`, `try`, anything that has to do with worldspace, permissions, or memory usage, and any enums for which their corresponding functions don't exist. Quota-related stuff *does* work.
 
 ### `render`
 
