@@ -1,6 +1,15 @@
 local material = {}
 
-keyvalues = dofile("keyvalues.lua")
+--keyvalues = dofile("keyvalues.lua")
+if not keyvalues then
+	keyvalues = {
+		decode = function()
+			return {
+				UnlitGeneric = true
+			}
+		end
+	}
+end
 
 shaders = {
 	UnlitGeneric = true,
