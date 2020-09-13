@@ -3,9 +3,11 @@ local material = {}
 --keyvalues = dofile("keyvalues.lua")
 if not keyvalues then
 	keyvalues = {
-		decode = function()
+		decode = function(data, path)
 			return {
-				UnlitGeneric = true
+				UnlitGeneric = {
+					["$basetexture"] = path..".png"
+				}
 			}
 		end
 	}
@@ -48,7 +50,7 @@ function material.load(path)
 		end
 		local success, data = xpcall(keyvalues.decode, function(err)
 			curchip:onerror(debug.traceback(tostring(err)))
-		end, text)
+		end, text, path)
 		if not success then
 			return
 		end
