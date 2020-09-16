@@ -111,6 +111,7 @@ dofile("types/material.lua")
 dofile("types/player.lua")
 
 dofile("libraries/builtins.lua")
+dofile("libraries/coroutine.lua")
 dofile("libraries/hook.lua")
 dofile("libraries/material.lua")
 dofile("libraries/math.lua")

@@ -64,6 +64,11 @@ guestEnv.setfenv = function(func, env)
 end
 --]]
 guestEnv.setmetatable = setmetatable
+guestEnv.setName = function(str)
+	str = string.gsub(str, "[\n\r\t]", " ")
+	str = string.gsub(str, "\0.*", "")
+	curchip:setName(str)
+end
 guestEnv.throw = error
 guestEnv.tonumber = tonumber
 guestEnv.tostring = tostring

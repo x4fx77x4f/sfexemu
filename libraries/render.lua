@@ -8,6 +8,10 @@ function render.clear(color, depth)
 	render.drawRectFast(0, 0, curchip.canvas.width, curchip.canvas.height)
 end
 
+function render.getResolution()
+	return curchip.canvas.width, curchip.canvas.height
+end
+
 definedfonts = {
 	DebugFixed = '13px monospace',
 	DebugFixedSmall = '13px monospace',
@@ -436,6 +440,9 @@ function render_drawerror(chip)
 	ctx:fillText("File: "..file, 0, y+h)
 	ctx:fillText("Line: "..line, 0, y+h+h)
 end
+
+function render.setFilterMag() end
+function render.setFilterMin() end
 
 render.TEXT_ALIGN_LEFT = 0
 render.TEXT_ALIGN_CENTER = 1
